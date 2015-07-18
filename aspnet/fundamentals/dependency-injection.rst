@@ -424,9 +424,22 @@ Property injection with bespoke attributes
 	{
 		[ActionContext]
 		public ActionContext ActionContext { get; set; }
-
+		
+		[ActionBindingContext]
+		public ActionBindingContext BindingContext { get; set; }
+	
 		public HttpContext HttpContext => ActionContext.HttpContext
 	}
+
+In the example above, the ``HttpContext`` property is written as an expression-bodied member. For more info, see `New Language Features in C# 6 <https://github.com/dotnet/roslyn/wiki/New-Language-Features-in-C%23-6>`_. 
+
+`[ActionContext] <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Core/ActionContextAttribute.cs>`__ Other context-injecting (AKA bespoke) attributes include `[ViewContext]` (useful in `ITagHelper` implementations) and `[ViewDataDictionary]` (useful in POCO controllers – and our `Controller` class).
+
+Use the `[ActionContext] <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Core/ActionContextAttribute.cs>`_ attribute on POCO controllers to add the `ActionContext <https://github.com/aspnet/Mvc/blob/master/src/Microsoft.AspNet.Mvc.Abstractions/ActionContext.cs>`__ to the DI container. The ``ActionContext`` contains the context object for execution of action which has been selected as part of an HTTP request.
+
+Use the `[ActionBindingContext] <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Core/ActionBindingContextAttribute.cs>`_ attribute on POCO controllers to add the `ActionBindingContext <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Core/ActionBindingContext.cs>`_ to the DI container.
+
+The Activate attribute is gone - see `Changes to [Activate] <https://github.com/aspnet/Announcements/issues/28>`_ but some of the text below will apply to bespoke attributes.
 
 In classic DI, every object and service that the DI system supports is registered in the DI container. Registration can be explicit or by searching assemblies of the file system and automatically registering them. The default container currently does not support searching/auto registration, but `AutoFac <http://autofac.org/>`_ and `MEF <http://msdn.microsoft.com/en-us/library/dd460648(v=vs.110).aspx>`_ have a startup method you can call to search for a list of interfaces and services and automatically wire them up.
 
@@ -550,28 +563,76 @@ The ``Activate`` attribute must be used for per-sub-request context such as ``Vi
 @inject and displaying razor compilations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  
-Run the app in the debugger and navigate to the ``About`` method (so the ``TimeSvc`` is rendered). Set a break point on the last line of `Mvc.Razor.Compilation.RoslynCompilationService.Compile <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Razor/Compilation/RazorCompilationService.cs#L47>`_ and then refresh the about page. When you hit the break point, examine ``results.GeneratedCode``. Razor uses the ``[Activate]`` attribute to inject the service into the view. The following code shows some of the generated view code for the time service sample used in this article. *Note* the generated code is likely to change as the Roslyn compilation service evolves.
+Run the app in the debugger and navigate to the ``About`` method (so the ``TimeSvc`` is rendered). Set a break point on the last line of `Mvc.Razor.Compilation.RoslynCompilationService.Compile <https://github.com/aspnet/Mvc/blob/dev/src/Microsoft.AspNet.Mvc.Razor/Compilation/RazorCompilationService.cs#L47>`_ and then refresh the about page. When you hit the break point, examine ``results.GeneratedCode``. Razor uses the `[RazorInjectAttribute] <https://github.com/aspnet/Mvc/blob/master/src/Microsoft.AspNet.Mvc.Razor/Internal/RazorInjectAttribute.cs>`__ attribute to inject the service into the view. The following code shows some of the generated view code for the time service sample used in this article. *Note* the generated code is likely to change as the Roslyn compilation service evolves.
 
 .. code-block:: c#
-   :emphasize-lines: 8-15
 
-	public class ASPV__Views_Home_About_cshtml : Microsoft.AspNet.Mvc.Razor.RazorPage<dynamic>
-	  {
+
+	#pragma checksum "/Views/Shared/About.cshtml" "{ff1816ec-aa5e-4d10-87f7-6f4963833460}" "d24b49071f51007351e620424d796e0202faee1d"
+	namespace Asp
+	{
+	#line 1 "/Views/Shared/About.cshtml"
+	using WebApplication1
+
+	#line default
 	#line hidden
-		public ASPV__Views_Home_About_cshtml() 
+		;
+		using System;
+		using System.Linq;
+		using System.Collections.Generic;
+		using Microsoft.AspNet.Mvc;
+		using Microsoft.AspNet.Mvc.Rendering;
+		using System.Threading.Tasks;
+
+		public class ASPV__Views_Shared_About_cshtml : Microsoft.AspNet.Mvc.Razor.RazorPage<dynamic>
 		{
-		}
-	#line hidden
-		[Microsoft.AspNet.Mvc.ActivateAttribute]
-		public ITimeService TimeSvc { get; private set; }
-		[Microsoft.AspNet.Mvc.ActivateAttribute]
-		public Microsoft.AspNet.Mvc.Rendering.IHtmlHelper<dynamic> Html { get; private set; }
-		[Microsoft.AspNet.Mvc.ActivateAttribute]
-		public Microsoft.AspNet.Mvc.IViewComponentHelper Component { get; private set; }
-		[Microsoft.AspNet.Mvc.ActivateAttribute]
-		public Microsoft.AspNet.Mvc.IUrlHelper Url { get; private set; }
-	}
+			#line hidden
+			public ASPV__Views_Shared_About_cshtml()
+			{
+			}
+			#line hidden
+			[Microsoft.AspNet.Mvc.Razor.Internal.RazorInjectAttribute]
+			public ITimeService TimeSvc { get; private set; }
+			[Microsoft.AspNet.Mvc.Razor.Internal.RazorInjectAttribute]
+			public Microsoft.AspNet.Mvc.Rendering.IHtmlHelper<dynamic> Html { get; private set; }
+			[Microsoft.AspNet.Mvc.Razor.Internal.RazorInjectAttribute]
+			public Microsoft.AspNet.Mvc.Rendering.IJsonHelper Json { get; private set; }
+			[Microsoft.AspNet.Mvc.Razor.Internal.RazorInjectAttribute]
+			public Microsoft.AspNet.Mvc.IViewComponentHelper Component { get; private set; }
+			[Microsoft.AspNet.Mvc.Razor.Internal.RazorInjectAttribute]
+			public Microsoft.AspNet.Mvc.IUrlHelper Url { get; private set; }
 
-bla bla
+			#line hidden
+
+			#pragma warning disable 1998
+			public override async Task ExecuteAsync()
+			{
+				BeginContext(56, 4, true);
+				WriteLiteral("<h3>");
+				EndContext();
+				BeginContext(61, 15, false);
+	#line 4 "/Views/Shared/About.cshtml"
+	Write(ViewBag.Message);
+
+	#line default
+	#line hidden
+				EndContext();
+				BeginContext(76, 19, true);
+				WriteLiteral("</h3>\r\n\r\n<h3>\r\n    ");
+				EndContext();
+				BeginContext(96, 13, false);
+	#line 7 "/Views/Shared/About.cshtml"
+	Write(TimeSvc.Ticks);
+
+	#line default
+	#line hidden
+				EndContext();
+				BeginContext(109, 18, true);
+				WriteLiteral(" From Razor\r\n</h3>");
+				EndContext();
+			}
+			#pragma warning restore 1998
+		}
+	}
  
  .. _depinject-author:
