@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Mvc;
+using Microsoft.AspNet.Cors.Core;
 using Microsoft.Framework.DependencyInjection;
 
 namespace CorsMvc
@@ -10,7 +11,7 @@ namespace CorsMvc
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.ConfigureCors(options =>
+            services.Configure<CorsOptions>(options =>
             {
                 // Define one or more CORS policies
                 options.AddPolicy("AllowSpecificOrigin",

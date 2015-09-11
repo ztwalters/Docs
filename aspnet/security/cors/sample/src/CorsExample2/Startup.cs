@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNet.Builder;
 using Microsoft.AspNet.Http;
+using Microsoft.AspNet.Cors.Core;
 using Microsoft.Framework.DependencyInjection;
 
 namespace CorsExample2
@@ -9,7 +10,7 @@ namespace CorsExample2
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
-            services.ConfigureCors(options =>
+            services.Configure<CorsOptions>(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin",
                     builder => builder.WithOrigins("http://example.com"));
