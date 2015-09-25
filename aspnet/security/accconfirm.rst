@@ -1,7 +1,7 @@
 Account Confirmation and Password Recovery with ASP.NET Identity
 ================================================================
 
-By `Pranav Rastogi`_
+By `Rick Anderson`_
 
 This tutorial shows you how to build an ASP.NET 5 Web site with email confirmation and password reset using ASP.NET Identity.
 
@@ -18,7 +18,7 @@ In this article:
 Create a New ASP.NET 5 Project
 ------------------------------
 
-To get started, open Visual Studio 2015. Next, create a New Project (from the Start Page, or via File - New - Project). On the left part of the New Project window, make sure the Visual C# templates are open and "Web" is selected, as shown:
+In Visual Studio 2015. Next, create a New Project (from the Start Page, or via File - New - Project). On the left part of the New Project window, make sure the Visual C# templates are open and "Web" is selected, as shown:
 
 .. image:: accconfirm/_static/new-project.png
 
@@ -38,6 +38,13 @@ Run the application and after a quick build step, you should see it open in your
 
 .. image:: accconfirm/_static/first-run.png
 
+Store your credentials in Secrets Manager
+---------------------------------------------------------
+
+In your project directory, set the user account and password:
+
+``C:\WebApplication1\src\WebApplication1>user-secret set SendGridUser RickAndMSFT``
+``info: Successfully saved SendGridUser = RickAndMSFT to the secret store.``
 
 Setup up Email provider
 -----------------------
