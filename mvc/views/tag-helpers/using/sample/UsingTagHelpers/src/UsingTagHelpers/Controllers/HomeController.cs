@@ -6,45 +6,30 @@ using Microsoft.AspNet.Mvc;
 
 namespace UsingTagHelpers.Controllers
 {
-   public class HomeController : Controller
-   {
-      public IActionResult Index()
-      {
-         return View();
-      }
+    public class HomeController : Controller
+    {
+        public IActionResult Index()
+        {
+            return View();
+        }
 
-      public IActionResult About(string version = null)
-      {
-         ViewData["Message"] = System.Net.WebUtility.HtmlEncode(version);
+        public IActionResult About()
+        {
+            ViewData["Message"] = "Your application description page.";
 
-         string view = null;
+            return View();
+        }
 
-         switch (version)
-         {
-            case "th":
-               view = "AboutTh";
-               break;
+        public IActionResult Contact()
+        {
+            ViewData["Message"] = "Your contact page.";
 
-               default:
-               view = null;
-               break;
+            return View();
+        }
 
-         }
-
-
-         return View(view);
-      }
-
-      public IActionResult Contact()
-      {
-         ViewData["Message"] = "Your contact page.";
-
-         return View();
-      }
-
-      public IActionResult Error()
-      {
-         return View("~/Views/Shared/Error.cshtml");
-      }
-   }
+        public IActionResult Error()
+        {
+            return View("~/Views/Shared/Error.cshtml");
+        }
+    }
 }
