@@ -28,11 +28,11 @@ Based on answers to these questions, application state in ASP.NET 5 apps can be 
 
 HttpContext.Items
 ^^^^^^^^^^^^^^^^^
-The ``Items`` collection is the best location to store data that is only needed while processing a given request. Its contents are disposed of with each request. It is best used as a means of communicating between components or middleware that operate at different points in time during a request, and have no direct relationship with one another through which to pass parameters or return values. See `Working with HttpContext.Items`_, below.
+The ``Items`` collection is the best location to store data that is only needed while processing a given request. Its contents are discarded after each request. It is best used as a means of communicating between components or middleware that operate at different points in time during a request, and have no direct relationship with one another through which to pass parameters or return values. See `Working with HttpContext.Items`_, below.
 
 Querystring and Post
 ^^^^^^^^^^^^^^^^^^^^
-State from one request can be provided to another request by adding values to the new request's querystring or by POSTing the data. This requires that the data be sent to the client and then sent back to the server, so it is best for small amounts of data. Querystrings are especially useful for capturing state in a persistent manner, allowing links with embedded state to be created and sent via email or social networks, for use potentially far into the future.
+State from one request can be provided to another request by adding values to the new request's querystring or by POSTing the data. These techniques should not be used with sensitive data, because these techniques require that the data be sent to the client and then sent back to the server. It is also best used with small amounts of data. Querystrings are especially useful for capturing state in a persistent manner, allowing links with embedded state to be created and sent via email or social networks, for use potentially far into the future. However, no assumption can be made about the user making the request, since URLs with querystrings can easily be shared, and care must also be taken to avoid `Cross-Site Request Forgery (CSRF) <https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)>`_ attacks (for instance, even assuming only authenticated users are able to perform actions using querystring-based URLs, an attacker could trick a user into visiting such a URL while already authenticated).
 
 Cookies
 ^^^^^^^
@@ -40,7 +40,7 @@ Very small pieces of state-related data can be stored in Cookies. These are sent
 
 Session
 ^^^^^^^
-Session storage relies on a cookie-based identifier to access data related to a given user session (a series of requests from a particular browser and machine). It is a good place to store application state that is specific to a particular user but which doesn't need to be persisted permanently (or which can be reproduced as needed from a persistent store). See `Installing and Configuring Session`_, below for more details.
+Session storage relies on a cookie-based identifier to access data related to a given browser session (a series of requests from a particular browser and machine). You can't necessarily assume that a session is restricted to a single user, so be careful what kind of information you store in Session. It is a good place to store application state that is specific to a particular session but which doesn't need to be persisted permanently (or which can be reproduced as needed from a persistent store). See `Installing and Configuring Session`_, below for more details.
 
 Cache
 ^^^^^
@@ -56,7 +56,7 @@ Any other form of persistent storage, whether using Entity Framework and a datab
 
 Working with HttpContext.Items
 ------------------------------
-The ``IHttpContext`` abstraction provides support for a simple object ``NameValueCollection``, called ``Items``. This collection is available from the start of an `IHttpRequest`` and is disposed of at the end of each request. You can access it by simply assigning a value to a keyed entry, or by requesting the value for a given key.
+The ``HttpContext`` abstraction provides support for a simple dictionary collection of type ``IDictionary<object, object>``, called ``Items``. This collection is available from the start of an `HttpRequest`` and is discarded at the end of each request. You can access it by simply assigning a value to a keyed entry, or by requesting the value for a given key.
 
 For example, some simple :doc:`middleware` could add something to the ``Items`` collection:
 
@@ -94,7 +94,7 @@ ASP.NET 5 ships a session package that provides middleware for managing session 
 
 Once the package is installed, Session must be configured in your application's ``Startup`` class. Session is built on top of ``IDistributedCache``, so you must configure this as well, otherwise you will receive an error.
 
-.. note:: If you do not configure at least one ``DistributedCache`` implementation, you will get an exception stating "Unable to resolve service for type 'Microsoft.Framework.Caching.Distributed.IDistributedCache' while attempting to activate 'Microsoft.AspNet.Session.DistributedSessionStore'."
+.. note:: If you do not configure at least one ``IDistributedCache`` implementation, you will get an exception stating "Unable to resolve service for type 'Microsoft.Framework.Caching.Distributed.IDistributedCache' while attempting to activate 'Microsoft.AspNet.Session.DistributedSessionStore'."
 
 ASP.NET ships with several implementations of ``IDistributedCache``, including an in-memory option (to be used during development and testing only). To configure session using this in-memory option, add the following to ``ConfigureServices``:
 
@@ -109,7 +109,9 @@ Then, add the following to ``Configure`` and you're ready to use session in your
 
 	app.UseSession();
 
-You can reference Session from ``IHttpContext`` once it is installed and configured.
+You can reference Session from ``HttpContext`` once it is installed and configured.
+
+.. note:: If you attempt to access ``Session`` before ``UseSession`` has been called, you will get an ``InvalidOperationException`` exception stating that "Session has not been configured for this application or request."
 
 Implementation Details
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -146,7 +148,7 @@ Once session is installed and configured, you refer to it via HttpContext, which
 		IEnumerable<string> Keys { get; }
 	}
 	
-Because``Session`` is built on top of ``IDistributedCache``, the things being stored must always support serialization. Thus, the interface works with ``byte[]`` not simply ``object``. However, there are extension methods that make working with simple types such as ``String`` and ``Int32`` easier, as well as making it easier to get a byte[] value from session.
+Because``Session`` is built on top of ``IDistributedCache``, you must always serialize the object instances being stored. Thus, the interface works with ``byte[]`` not simply ``object``. However, there are extension methods that make working with simple types such as ``String`` and ``Int32`` easier, as well as making it easier to get a byte[] value from session.
 
 .. code-block:: c#
 
@@ -179,9 +181,9 @@ This default behavior is produced by the following middleware in ``Startup.cs``,
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 70-96
-	:dedent: 8
-	:emphasize-lines: 4,7,9-11,25-26
+	:lines: 72-101
+	:dedent: 12
+	:emphasize-lines: 4,6,8-11,28-29
 
 ``GetOrCreateEntries`` is a helper method that will retrieve a ``RequestEntryCollection`` instance from ``Session`` if it exists; otherwise, it creates the empty collection and returns that. The collection holds ``RequestEntry`` instances, which keep track of the different requests the user has made during the current session, and how many requests they've made for each path.
 
@@ -199,12 +201,12 @@ This default behavior is produced by the following middleware in ``Startup.cs``,
 
 .. note:: The types that are to be stored in session must be marked with ``[Serializable]``.
 
-Fetching the current interest of ``RequestEntryCollection`` is done via the ``GetOrCreateEntries`` helper method:
+Fetching the current instance of ``RequestEntryCollection`` is done via the ``GetOrCreateEntries`` helper method:
 
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 99-117
+	:lines: 104-122
 	:dedent: 8
 	:emphasize-lines: 4,7-11
 
@@ -225,14 +227,14 @@ Establishing the session is done in the middleware that handles requests to "/se
 	:language: c#
 	:lines: 53-69
 	:dedent: 12
-	:emphasize-lines: 2,6-9
+	:emphasize-lines: 2,6-9,11
 
 Requests to this path will get or create a ``RequestEntryCollection``, will add the current path to it, and then will store it in session using the helper method ``SaveEntries``, shown below:
 
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 118-126
+	:lines: 123-131
 	:dedent: 8
 	:emphasize-lines: 3,5-7
 

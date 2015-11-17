@@ -9,7 +9,7 @@ namespace AppState.Model
     {
         public List<RequestEntry> Entries { get; set; } = new List<RequestEntry>();
 
-        public void Add(string requestPath)
+        public void RecordRequest(string requestPath)
         {
             var existingEntry = Entries.FirstOrDefault(e => e.Path == requestPath);
             if (existingEntry != null) { existingEntry.Count++; return; }

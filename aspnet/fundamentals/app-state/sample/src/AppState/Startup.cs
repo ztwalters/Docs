@@ -25,7 +25,7 @@ namespace AppState
             });
         }
 
-        public void Configure(IApplicationBuilder app, ILoggerFactory loggerFactory, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             app.UseIISPlatformHandler();
             if (env.IsDevelopment())
@@ -56,10 +56,12 @@ namespace AppState
                 subApp.Run(async context =>
                 {
                     RequestEntryCollection collection = GetOrCreateEntries(context);
-                    collection.Add(context.Request.PathBase + context.Request.Path);
+                    collection.RecordRequest(context.Request.PathBase + context.Request.Path);
                     SaveEntries(context, collection);
-                    context.Session.SetString("StartTime", DateTime.Now.ToLongTimeString());
-
+                    if (context.Session.GetString("StartTime") == null)
+                    {
+                        context.Session.SetString("StartTime", DateTime.Now.ToLongTimeString());
+                    }
                     await context.Response.WriteAsync("<html><body>");
                     await context.Response.WriteAsync($"Counting: You have made {collection.TotalCount()} requests to this application.<br><a href=\"/\">Return</a>");
                     await context.Response.WriteAsync("</body></html>");
@@ -72,22 +74,25 @@ namespace AppState
             {
                 RequestEntryCollection collection = GetOrCreateEntries(context);
 
-                await context.Response.WriteAsync("<html><body>");
                 if (collection.TotalCount() == 0)
                 {
+                    await context.Response.WriteAsync("<html><body>");
                     await context.Response.WriteAsync("Your session has not been established.<br>");
                     await context.Response.WriteAsync(DateTime.Now.ToLongTimeString() + "<br>");
                     await context.Response.WriteAsync("<a href=\"/session\">Establish session</a>.<br>");
                 }
                 else
                 {
-                    collection.Add(context.Request.PathBase + context.Request.Path);
+                    collection.RecordRequest(context.Request.PathBase + context.Request.Path);
+                    SaveEntries(context, collection);
+
+                    // Note: it's best to consistently perform all session access before writing anything to response
+                    await context.Response.WriteAsync("<html><body>");
                     await context.Response.WriteAsync("Session Established At: " + context.Session.GetString("StartTime") + "<br>");
                     foreach (var entry in collection.Entries)
                     {
                         await context.Response.WriteAsync("Request: " + entry.Path + " was requested " + entry.Count + " times.<br />");
                     }
-                    SaveEntries(context, collection);
 
                     await context.Response.WriteAsync("Your session was located, you've visited the site this many times: " + collection.TotalCount() + "<br />");
                 }
