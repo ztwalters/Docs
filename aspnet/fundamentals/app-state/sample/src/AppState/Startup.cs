@@ -9,6 +9,8 @@ using System.IO;
 using Microsoft.Framework.Logging;
 using AppState.Model;
 using Microsoft.AspNet.Hosting;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace AppState
 {
@@ -25,8 +27,12 @@ namespace AppState
             });
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, 
+            IHostingEnvironment env, 
+            ILoggerFactory loggerFactory)
         {
+            loggerFactory.MinimumLevel = LogLevel.Debug;
+            loggerFactory.AddConsole(LogLevel.Debug);
             app.UseIISPlatformHandler();
             if (env.IsDevelopment())
             {
@@ -55,6 +61,8 @@ namespace AppState
             {
                 subApp.Run(async context =>
                 {
+                    // uncomment the following line and delete session coookie to generate an error due to session access after response has begun
+                    // await context.Response.WriteAsync("some content");
                     RequestEntryCollection collection = GetOrCreateEntries(context);
                     collection.RecordRequest(context.Request.PathBase + context.Request.Path);
                     SaveEntries(context, collection);
@@ -105,13 +113,11 @@ namespace AppState
         {
             RequestEntryCollection collection = null;
             byte[] requestEntriesBytes = context.Session.Get("RequestEntries");
-            if (requestEntriesBytes != null)
+
+            if (requestEntriesBytes != null && requestEntriesBytes.Length > 0)
             {
-                using (MemoryStream stream = new MemoryStream(requestEntriesBytes))
-                {
-                    var formatter = new BinaryFormatter();
-                    collection = formatter.Deserialize(stream) as RequestEntryCollection;
-                }
+                string json = System.Text.Encoding.UTF8.GetString(requestEntriesBytes);
+                return JsonConvert.DeserializeObject<RequestEntryCollection>(json);
             }
             if (collection == null)
             {
@@ -122,12 +128,10 @@ namespace AppState
 
         private void SaveEntries(HttpContext context, RequestEntryCollection collection)
         {
-            using (MemoryStream stream = new MemoryStream())
-            {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(stream, collection);
-                context.Session.Set("RequestEntries", stream.ToArray());
-            }
+            string json = JsonConvert.SerializeObject(collection);
+            byte[] serializedResult = System.Text.Encoding.UTF8.GetBytes(json);
+
+            context.Session.Set("RequestEntries", serializedResult);
         }
     }
 }

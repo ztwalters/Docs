@@ -89,8 +89,8 @@ ASP.NET 5 ships a session package that provides middleware for managing session 
 .. literalinclude:: app-state/sample/src/AppState/project.json
 	:language: javascript
 	:linenos:
-	:lines: 5-9
-	:emphasize-lines: 4
+	:lines: 5-14
+	:emphasize-lines: 5-6
 
 Once the package is installed, Session must be configured in your application's ``Startup`` class. Session is built on top of ``IDistributedCache``, so you must configure this as well, otherwise you will receive an error.
 
@@ -112,6 +112,10 @@ Then, add the following to ``Configure`` and you're ready to use session in your
 You can reference Session from ``HttpContext`` once it is installed and configured.
 
 .. note:: If you attempt to access ``Session`` before ``UseSession`` has been called, you will get an ``InvalidOperationException`` exception stating that "Session has not been configured for this application or request."
+
+.. warning:: If you attempt to access ``Session`` after you have already begun writing to the ``Response`` stream, you will get an ``InvalidOperationException`` as well, stating that "The session cannot be established after the response has started". This exception may not be displayed in the browser; you may need to view the web server log  to discover it, as shown below:
+
+.. image:: app-state/_static/session-after-response-error.png
 
 Implementation Details
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -168,7 +172,7 @@ The associated sample application demonstrates how to work with Session, includi
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 18-26
+	:lines: 20-28
 	:dedent: 8
 	:emphasize-lines: 3,5-8
 
@@ -176,12 +180,12 @@ When you first navigate to the web server, it displays a screen indicating that 
 
 .. image:: app-state/_static/no-session-established.png
 
-This default behavior is produced by the following middleware in ``Startup.cs``, which runs when requests are made that do not already have an established session:
+This default behavior is produced by the following middleware in ``Startup.cs``, which runs when requests are made that do not already have an established session (note the highlighted sections):
 
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 72-101
+	:lines: 79-110
 	:dedent: 12
 	:emphasize-lines: 4,6,8-11,28-29
 
@@ -206,9 +210,9 @@ Fetching the current instance of ``RequestEntryCollection`` is done via the ``Ge
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 104-122
+	:lines: 112-127
 	:dedent: 8
-	:emphasize-lines: 4,7-11
+	:emphasize-lines: 4,8-9
 
 When the entry for the object exists in ``Session``, it is retrieved as a ``byte[]`` type, and then deserialized using a ``MemoryStream`` and a ``BinaryFormatter``, as shown above. If the object isn't in ``Session``, the method returns a new instance of the ``RequestEntryCollection``.
 
@@ -225,18 +229,18 @@ Establishing the session is done in the middleware that handles requests to "/se
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 53-69
+	:lines: 59-78
 	:dedent: 12
-	:emphasize-lines: 2,6-9,11
+	:emphasize-lines: 2,8-14
 
 Requests to this path will get or create a ``RequestEntryCollection``, will add the current path to it, and then will store it in session using the helper method ``SaveEntries``, shown below:
 
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 123-131
+	:lines: 129-137
 	:dedent: 8
-	:emphasize-lines: 3,5-7
+	:emphasize-lines: 6
 
 ``SaveEntries`` demonstrates how to serialize a custom object into a ``byte[]`` for storage in ``Session`` using a ``MemoryStream`` and a ``BinaryFormatter``.
 	
@@ -245,10 +249,10 @@ The sample includes one more piece of middleware worth mentioning, which is mapp
 .. literalinclude:: app-state/sample/src/AppState/Startup.cs
 	:linenos:
 	:language: c#
-	:lines: 39-51
+	:lines: 45-58
 	:dedent: 12
 	:emphasize-lines: 2,13
 
-Note that this middleware is configured before the call to ``app.UseSession()`` is made. Thus, the ``Session`` feature is not available to this middleware, and requests made to it do not reset the session ``IdleTimeout``. You can confirm this behavior in the sample application by refreshing the untracked path several times within 10 seconds, and then return to the application root. You will find that your session has expired, despite no more than 10 seconds having passed between your requests to the application.
+Note that this middleware is configured **before** the call to ``app.UseSession()`` is made (on line 13). Thus, the ``Session`` feature is not available to this middleware, and requests made to it do not reset the session ``IdleTimeout``. You can confirm this behavior in the sample application by refreshing the untracked path several times within 10 seconds, and then return to the application root. You will find that your session has expired, despite no more than 10 seconds having passed between your requests to the application.
 
 
