@@ -31,6 +31,7 @@ import os
 # ones.
 extensions = [
     'sphinx.ext.intersphinx',
+    'yasfb'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -358,4 +359,8 @@ intersphinx_mapping = {
     'mvc': ('http://docs.asp.net/projects/mvc/en/latest', 'mvc.inv'),
     'dotnet': ('http://dotnet.readthedocs.org/en/latest', 'dotnet.inv')
 }
+
+
+feed_num_items = 50
+feed_skip_regex = '(.)*index'
 
