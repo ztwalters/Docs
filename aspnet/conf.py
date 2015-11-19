@@ -200,7 +200,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_use_opensearch = ''
 
 # This is the file name suffix for HTML files (e.g. ".xhtml").
-#html_file_suffix = None
+html_file_suffix = '.html'
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'aspnetdoc'
