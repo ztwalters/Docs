@@ -200,7 +200,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_use_opensearch = ''
 
 # This is the file name suffix for HTML files (e.g. ".xhtml").
-html_file_suffix = '.html'
+#html_file_suffix = None
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'aspnetdoc'
@@ -360,7 +360,9 @@ intersphinx_mapping = {
     'dotnet': ('http://dotnet.readthedocs.org/en/latest', 'dotnet.inv')
 }
 
-
-feed_num_items = 50
+feed_num_items = 15
 feed_skip_regex = '(.)*index'
+feed_base_url = 'http://docs.asp.net/en/latest'
+feed_description = 'ASP.NET Documentation'
+feed_author = 'Microsoft'
 
